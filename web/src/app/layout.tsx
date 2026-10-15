@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/seller" className="text-sm text-slate-600 hover:text-slate-900">Nhà cung cấp</Link>
               <Link href="/buyer" className="text-sm text-slate-600 hover:text-slate-900">Bên mua</Link>
               <Link href="/funder" className="text-sm text-slate-600 hover:text-slate-900">Bên tài trợ</Link>
+              <Link href="/admin" className="text-sm text-slate-400 hover:text-slate-900">Vận hành</Link>
               <div className="ml-auto flex items-center gap-3"><FaucetButton /><ConnectButton /></div>
             </nav>
           </header>
