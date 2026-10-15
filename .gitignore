@@ -1,0 +1,16 @@
+# secrets
+.env
+*.key
+keystore/
+# foundry
+contracts/out/
+contracts/cache/
+contracts/lib/
+contracts/broadcast/*/31337/
+# dotnet
+backend/**/bin/
+backend/**/obj/
+# web
+web/node_modules/
+web/.next/
+.DS_Store
