@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{232DC555-BE89-41D5-A99C-D8C2683FE19A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VeriTrade.Core", "src\VeriTrade.Core\VeriTrade.Core.csproj", "{7940AEDB-B811-48CC-9900-2EBA582F9316}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VeriTrade.Api", "src\VeriTrade.Api\VeriTrade.Api.csproj", "{495CCA1A-BA49-4AC6-BAE7-660A76D3A495}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BCF9B7E6-DBDB-497C-AB64-CCF84C241643}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VeriTrade.Tests", "tests\VeriTrade.Tests\VeriTrade.Tests.csproj", "{1FE90BFE-6C0D-43DA-86F7-3BB68C407B20}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{C84DBF6C-9825-4C53-B4B4-62D7BDA332B6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VeriTrade.SampleInvoice", "tools\VeriTrade.SampleInvoice\VeriTrade.SampleInvoice.csproj", "{60B7DA99-2F6F-412E-ADD5-E92246DA1510}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7940AEDB-B811-48CC-9900-2EBA582F9316}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7940AEDB-B811-48CC-9900-2EBA582F9316}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7940AEDB-B811-48CC-9900-2EBA582F9316}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7940AEDB-B811-48CC-9900-2EBA582F9316}.Release|Any CPU.Build.0 = Release|Any CPU
+		{495CCA1A-BA49-4AC6-BAE7-660A76D3A495}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{495CCA1A-BA49-4AC6-BAE7-660A76D3A495}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{495CCA1A-BA49-4AC6-BAE7-660A76D3A495}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{495CCA1A-BA49-4AC6-BAE7-660A76D3A495}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FE90BFE-6C0D-43DA-86F7-3BB68C407B20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FE90BFE-6C0D-43DA-86F7-3BB68C407B20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FE90BFE-6C0D-43DA-86F7-3BB68C407B20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FE90BFE-6C0D-43DA-86F7-3BB68C407B20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60B7DA99-2F6F-412E-ADD5-E92246DA1510}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60B7DA99-2F6F-412E-ADD5-E92246DA1510}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60B7DA99-2F6F-412E-ADD5-E92246DA1510}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60B7DA99-2F6F-412E-ADD5-E92246DA1510}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7940AEDB-B811-48CC-9900-2EBA582F9316} = {232DC555-BE89-41D5-A99C-D8C2683FE19A}
+		{495CCA1A-BA49-4AC6-BAE7-660A76D3A495} = {232DC555-BE89-41D5-A99C-D8C2683FE19A}
+		{1FE90BFE-6C0D-43DA-86F7-3BB68C407B20} = {BCF9B7E6-DBDB-497C-AB64-CCF84C241643}
+		{60B7DA99-2F6F-412E-ADD5-E92246DA1510} = {C84DBF6C-9825-4C53-B4B4-62D7BDA332B6}
+	EndGlobalSection
+EndGlobal
