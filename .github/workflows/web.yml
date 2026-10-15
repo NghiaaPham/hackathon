@@ -1,0 +1,21 @@
+name: web
+on:
+  pull_request:
+    paths: ["web/**", "shared/abi/**", ".github/workflows/web.yml"]
+  push:
+    branches: [main]
+    paths: ["web/**", "shared/abi/**"]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: node scripts/gen-abi.mjs && git diff --exit-code src/lib/abi.ts
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run build
+        env: { NEXT_TELEMETRY_DISABLED: "1" }
