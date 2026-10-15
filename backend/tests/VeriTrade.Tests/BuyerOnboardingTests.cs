@@ -1,6 +1,7 @@
 using Nethereum.Signer;
 using VeriTrade.Core.Buyers;
 using VeriTrade.Core.Identity;
+using VeriTrade.Core.Storage;
 
 namespace VeriTrade.Tests;
 
@@ -18,46 +19,46 @@ public class BuyerOnboardingTests
         new EthereumMessageSigner().EncodeUTF8AndSign(BuyerOnboardingService.ProofMessage(taxCode, wallet), key ?? _key);
 
     [Fact]
-    public void ValidRequest_StoredWithSameBuyerIdAsInvoices()
+    public async Task ValidRequest_StoredWithSameBuyerIdAsInvoices()
     {
-        var r = _svc.Submit("0109876543", "Cong ty B", Wallet, Sign("0109876543", Wallet));
+        var r = await _svc.SubmitAsync("0109876543", "Cong ty B", Wallet, Sign("0109876543", Wallet));
         Assert.Equal(Ids.BuyerId("0109876543"), r.BuyerId);
-        Assert.Single(_store.List());
+        Assert.Single(await _store.ListAsync());
     }
 
     [Fact]
-    public void BranchTaxCode_Accepted() =>
-        Assert.NotNull(_svc.Submit("0109876543-001", "Chi nhanh", Wallet, Sign("0109876543-001", Wallet)));
+    public async Task BranchTaxCode_Accepted() =>
+        Assert.NotNull(await _svc.SubmitAsync("0109876543-001", "Chi nhanh", Wallet, Sign("0109876543-001", Wallet)));
 
     [Theory]
     [InlineData("123")]
     [InlineData("01098765431")]
     [InlineData("0109876543-1")]
     [InlineData("abcdefghij")]
-    public void BadTaxCode_Rejected(string mst) =>
-        Assert.Throws<BuyerOnboardingException>(() => _svc.Submit(mst, "Cong ty B", Wallet, Sign(mst, Wallet)));
+    public Task BadTaxCode_Rejected(string mst) =>
+        Assert.ThrowsAsync<BuyerOnboardingException>(() => _svc.SubmitAsync(mst, "Cong ty B", Wallet, Sign(mst, Wallet)));
 
     [Fact]
-    public void SignatureFromAnotherWallet_Rejected()
+    public Task SignatureFromAnotherWallet_Rejected()
     {
         var other = EthECKey.GenerateKey();
-        Assert.Throws<BuyerOnboardingException>(() => _svc.Submit("0109876543", "Cong ty B", Wallet, Sign("0109876543", Wallet, other)));
+        return Assert.ThrowsAsync<BuyerOnboardingException>(() => _svc.SubmitAsync("0109876543", "Cong ty B", Wallet, Sign("0109876543", Wallet, other)));
     }
 
     [Fact]
-    public void SignatureForAnotherTaxCode_Rejected() =>
-        Assert.Throws<BuyerOnboardingException>(() => _svc.Submit("0109876543", "Cong ty B", Wallet, Sign("0312345678", Wallet)));
+    public Task SignatureForAnotherTaxCode_Rejected() =>
+        Assert.ThrowsAsync<BuyerOnboardingException>(() => _svc.SubmitAsync("0109876543", "Cong ty B", Wallet, Sign("0312345678", Wallet)));
 
     [Fact]
-    public void GarbageSignature_Rejected() =>
-        Assert.Throws<BuyerOnboardingException>(() => _svc.Submit("0109876543", "Cong ty B", Wallet, "0x1234"));
+    public Task GarbageSignature_Rejected() =>
+        Assert.ThrowsAsync<BuyerOnboardingException>(() => _svc.SubmitAsync("0109876543", "Cong ty B", Wallet, "0x1234"));
 
     [Fact]
-    public void RepeatRequest_Idempotent()
+    public async Task RepeatRequest_Idempotent()
     {
-        var a = _svc.Submit("0109876543", "Cong ty B", Wallet, Sign("0109876543", Wallet));
-        var b = _svc.Submit("0109876543", "Cong ty B", Wallet.ToLowerInvariant(), Sign("0109876543", Wallet.ToLowerInvariant()));
+        var a = await _svc.SubmitAsync("0109876543", "Cong ty B", Wallet, Sign("0109876543", Wallet));
+        var b = await _svc.SubmitAsync("0109876543", "Cong ty B", Wallet.ToLowerInvariant(), Sign("0109876543", Wallet.ToLowerInvariant()));
         Assert.Equal(a.Id, b.Id);
-        Assert.Single(_store.List());
+        Assert.Single(await _store.ListAsync());
     }
 }
