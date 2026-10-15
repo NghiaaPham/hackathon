@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAccount, useReadContract, useSignTypedData, useWriteContract } from "wagmi";
 import type { Hex } from "viem";
 import { addresses, targetChain } from "@/lib/chain";
-import { registryAbi, tvndAbi } from "@/lib/abi";
+import { buyerRegistryAbi, registryAbi, tvndAbi } from "@/lib/abi";
 import { isBytes32, vnd, waterfall } from "@/lib/format";
 import { ReceivableSummary, TxResult, useReceivable } from "@/components/Receivable";
 
@@ -27,6 +27,10 @@ export default function BuyerPage() {
   const [platformBps, setPlatformBps] = useState(50);
   const { data: nonce } = useReadContract({
     address: addresses.registry, abi: registryAbi, functionName: "nonces", args: address ? [address] : undefined, query: { enabled: !!address },
+  });
+  const { data: isSigner } = useReadContract({
+    address: addresses.buyerRegistry, abi: buyerRegistryAbi, functionName: "isSigner",
+    args: r && address ? [r.buyerId, address] : undefined, query: { enabled: !!r && !!address },
   });
   const { signTypedDataAsync } = useSignTypedData();
   const confirm = useWriteContract();
@@ -68,7 +72,15 @@ export default function BuyerPage() {
         {id && <Link className="text-sm text-blue-600 underline" href={`/r/${id}`}>Dòng thời gian</Link>}
       </div>
 
-      {r?.status === 2 && (
+      {r?.status === 2 && address && isSigner === false && (
+        <div className="card space-y-3">
+          <h2 className="font-semibold">Ví này chưa được duyệt cho bên mua của hóa đơn</h2>
+          <p className="text-sm text-slate-600">Chỉ ví đã đăng ký cho đúng MST bên mua mới ký xác nhận được.</p>
+          <Link className="btn" href="/buyer/register">Đăng ký ví cho doanh nghiệp</Link>
+        </div>
+      )}
+
+      {r?.status === 2 && isSigner && (
         <div className="card space-y-4">
           <h2 className="font-semibold">Xác nhận khoản nợ và điều khoản tài trợ</h2>
           <div className="grid grid-cols-3 gap-3">
