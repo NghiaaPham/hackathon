@@ -1,6 +1,9 @@
 using VeriTrade.Core;
 using VeriTrade.Core.Chain;
+using System.Security.Cryptography;
+using System.Text;
 using VeriTrade.Core.Identity;
+using VeriTrade.Core.Storage;
 using VeriTrade.Core.Xml;
 
 namespace VeriTrade.Tests;
@@ -33,11 +36,35 @@ public class VerificationServiceTests
         }
     }
 
-    private static (VerificationService svc, FakeRegistry reg) Make()
+    private static (VerificationService svc, FakeRegistry reg) Make(IReceivableStore? store = null)
     {
         var reg = new FakeRegistry();
         var ids = new ReceivableIdService(new Dictionary<byte, byte[]> { [1] = new byte[32] }, 1);
-        return (new VerificationService(new InvoiceVerifier(new()), ids, reg, TimeProvider.System), reg);
+        return (new VerificationService(new InvoiceVerifier(new()), ids, reg, store ?? new InMemoryReceivableStore(), TimeProvider.System), reg);
+    }
+
+    [Fact]
+    public async Task ValidInvoice_OffChainRecordKeepsXmlAndParties()
+    {
+        var store = new InMemoryReceivableStore();
+        var (svc, _) = Make(store);
+        var xml = InvoiceFactory.Signed();
+        var r = await svc.RegisterAsync(Req(xml));
+        var saved = await store.GetAsync(Convert.FromHexString(r.ReceivableId[2..]));
+        Assert.NotNull(saved);
+        Assert.Equal(r.Invoice.BuyerTaxCode, saved!.BuyerTaxCode);
+        Assert.Equal(SHA256.HashData(saved.Xml), saved.XmlSha256);
+        Assert.Equal(r.VerifyTx, saved.VerifyTx);
+    }
+
+    [Fact]
+    public async Task OversizedXml_RejectedBeforeParsing()
+    {
+        var (svc, reg) = Make();
+        var big = new MemoryStream(Encoding.UTF8.GetBytes("<a>" + new string('x', SafeXml.MaxBytes) + "</a>"));
+        await Assert.ThrowsAsync<InvoiceVerificationException>(() =>
+            svc.RegisterAsync(new RegistrationRequest(big, Seller, DateTimeOffset.UtcNow.AddDays(9))));
+        Assert.Equal(0, reg.Writes);
     }
 
     private static RegistrationRequest Req(string xml) =>
