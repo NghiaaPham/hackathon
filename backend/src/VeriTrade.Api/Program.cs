@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Http.Features;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using System.Security.Cryptography;
+using System.Text;
 using VeriTrade.Core;
+using VeriTrade.Core.Buyers;
 using VeriTrade.Core.Chain;
 using VeriTrade.Core.Identity;
 using VeriTrade.Core.Xml;
@@ -32,6 +35,8 @@ builder.Services.AddSingleton<IRegistryClient>(_ =>
     return new RegistryClient(web3, Secret("Chain:RegistryAddress"));
 });
 builder.Services.AddSingleton<VerificationService>();
+builder.Services.AddSingleton<IBuyerRequestStore, InMemoryBuyerRequestStore>();
+builder.Services.AddSingleton<BuyerOnboardingService>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
@@ -77,6 +82,37 @@ app.MapGet("/api/receivables/{id}", async (string id, IRegistryClient registry, 
     return r.Status == ReceivableStatus.None ? Results.NotFound() : Results.Ok(r);
 });
 
+// Buyer asks for its wallet to become a signer; proof = personal_sign of BuyerOnboardingService.ProofMessage.
+app.MapPost("/api/buyers/requests", (BuyerRequestBody body, BuyerOnboardingService svc) =>
+{
+    try
+    {
+        var r = svc.Submit(body.TaxCode, body.CompanyName, body.Wallet, body.Signature);
+        return Results.Accepted(value: new { requestId = r.Id, status = "pending" });
+    }
+    catch (BuyerOnboardingException ex)
+    {
+        return Results.Problem(ex.Message, statusCode: 400, title: "BadRequest");
+    }
+});
+
+// Operator review list. Disabled unless ADMIN_TOKEN is set; buyerId is only revealed here.
+app.MapGet("/api/buyers/requests", (HttpRequest http, IBuyerRequestStore store) =>
+{
+    var token = cfg["ADMIN_TOKEN"];
+    if (string.IsNullOrEmpty(token)) return Results.NotFound();
+    var given = http.Headers["X-Admin-Token"].ToString();
+    if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(given), Encoding.UTF8.GetBytes(token)))
+        return Results.Unauthorized();
+    return Results.Ok(store.List().Select(r => new
+    {
+        r.Id, r.TaxCode, r.CompanyName, r.Wallet, buyerId = "0x" + Convert.ToHexString(r.BuyerId).ToLowerInvariant(), r.CreatedAt,
+    }));
+});
+
 app.Run();
 
+public sealed record BuyerRequestBody(string TaxCode, string CompanyName, string Wallet, string Signature);
+
 public partial class Program;
+
