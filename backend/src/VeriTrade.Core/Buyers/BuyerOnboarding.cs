@@ -1,31 +1,13 @@
-using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using Nethereum.Signer;
 using Nethereum.Util;
 using VeriTrade.Core.Identity;
+using VeriTrade.Core.Storage;
 
 namespace VeriTrade.Core.Buyers;
 
 /// <summary>A buyer company asks for a wallet to be allowed to confirm receivables on its behalf.</summary>
 public sealed record BuyerSignerRequest(Guid Id, string TaxCode, string CompanyName, string Wallet, byte[] BuyerId, DateTimeOffset CreatedAt);
-
-public interface IBuyerRequestStore
-{
-    bool TryAdd(BuyerSignerRequest request);
-    IReadOnlyList<BuyerSignerRequest> List();
-}
-
-/// <summary>Demo store; swap for Postgres. Keyed by (buyerId, wallet) so a repeat request is idempotent.</summary>
-public sealed class InMemoryBuyerRequestStore : IBuyerRequestStore
-{
-    private readonly ConcurrentDictionary<string, BuyerSignerRequest> _byKey = new();
-    public const int MaxRequests = 10_000;
-
-    public bool TryAdd(BuyerSignerRequest r) =>
-        _byKey.Count < MaxRequests && _byKey.TryAdd(Convert.ToHexString(r.BuyerId) + "|" + r.Wallet.ToLowerInvariant(), r);
-
-    public IReadOnlyList<BuyerSignerRequest> List() => _byKey.Values.OrderBy(r => r.CreatedAt).ToList();
-}
 
 public sealed class BuyerOnboardingException(string message) : Exception(message);
 
@@ -43,7 +25,7 @@ public sealed class BuyerOnboardingService(ReceivableIdService ids, IBuyerReques
     public static string ProofMessage(string taxCode, string wallet) =>
         $"VeriTrade: yeu cau quyen ky xac nhan cho MST {taxCode}\nVi: {wallet.ToLowerInvariant()}";
 
-    public BuyerSignerRequest Submit(string taxCode, string companyName, string wallet, string signature)
+    public Task<BuyerSignerRequest> SubmitAsync(string taxCode, string companyName, string wallet, string signature, CancellationToken ct = default)
     {
         taxCode = (taxCode ?? "").Trim();
         companyName = (companyName ?? "").Trim();
@@ -58,8 +40,6 @@ public sealed class BuyerOnboardingService(ReceivableIdService ids, IBuyerReques
 
         var request = new BuyerSignerRequest(Guid.NewGuid(), taxCode, companyName, AddressUtil.Current.ConvertToChecksumAddress(wallet),
             ids.BuyerId(taxCode), clock.GetUtcNow());
-        if (!store.TryAdd(request))
-            return store.List().First(r => r.BuyerId.AsSpan().SequenceEqual(request.BuyerId) && AddressUtil.Current.AreAddressesTheSame(r.Wallet, wallet));
-        return request;
+        return store.AddOrGetAsync(request, ct);
     }
 }
