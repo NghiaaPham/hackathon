@@ -28,3 +28,12 @@ HMAC_KEY_V1=<64 hex> VERIFIER_PRIVATE_KEY=<key> Chain__RegistryAddress=<addr> do
 `buyerId = HMAC-SHA256(k_v, "BUYER|" + buyer MST)`. Before registering, the id under every active key version is checked on-chain.
 
 Secrets (`HMAC_KEY_V1`, `VERIFIER_PRIVATE_KEY`) come from environment/secret store only.
+
+## Storage
+
+Chain là nguồn sự thật cho trạng thái và tiền. Postgres giữ phần **không được lên chain**: MST, tên hai bên, ký hiệu/số hóa đơn, XML đã ký (bằng chứng khi tranh chấp) và SHA-256 của nó, cùng yêu cầu đăng ký ví bên mua.
+
+- Bật bằng `ConnectionStrings__Postgres`; không đặt thì dùng in-memory (chỉ để demo, mất khi restart).
+- Schema idempotent áp dụng lúc khởi động (`PostgresSchema.Sql`), thay đổi chỉ theo kiểu thêm cột.
+- Ghi bằng upsert theo `receivable_id`, nên retry sau sự cố giữa giao dịch on-chain và lúc ghi DB không lỗi.
+- Local: `docker compose up -d` trong `backend/`. Test Postgres chạy khi có `VERITRADE_TEST_PG` (CI dùng service container).
