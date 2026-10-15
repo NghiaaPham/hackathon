@@ -4,7 +4,9 @@ using Nethereum.Web3.Accounts;
 using System.Security.Cryptography;
 using System.Text;
 using VeriTrade.Core;
+using Npgsql;
 using VeriTrade.Core.Buyers;
+using VeriTrade.Core.Storage;
 using VeriTrade.Core.Chain;
 using VeriTrade.Core.Identity;
 using VeriTrade.Core.Xml;
@@ -35,10 +37,23 @@ builder.Services.AddSingleton<IRegistryClient>(_ =>
     return new RegistryClient(web3, Secret("Chain:RegistryAddress"));
 });
 builder.Services.AddSingleton<VerificationService>();
-builder.Services.AddSingleton<IBuyerRequestStore, InMemoryBuyerRequestStore>();
+// Postgres when ConnectionStrings__Postgres is set; otherwise in-memory (demo only, lost on restart).
+if (cfg.GetConnectionString("Postgres") is { Length: > 0 } pg)
+{
+    builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(pg));
+    builder.Services.AddSingleton<IReceivableStore, PostgresReceivableStore>();
+    builder.Services.AddSingleton<IBuyerRequestStore, PostgresBuyerRequestStore>();
+}
+else
+{
+    builder.Services.AddSingleton<IReceivableStore, InMemoryReceivableStore>();
+    builder.Services.AddSingleton<IBuyerRequestStore, InMemoryBuyerRequestStore>();
+}
 builder.Services.AddSingleton<BuyerOnboardingService>();
 
 var app = builder.Build();
+if (app.Services.GetService<NpgsqlDataSource>() is { } dataSource)
+    await PostgresSchema.EnsureAsync(dataSource);
 app.UseExceptionHandler();
 app.UseCors();
 
@@ -83,11 +98,11 @@ app.MapGet("/api/receivables/{id}", async (string id, IRegistryClient registry, 
 });
 
 // Buyer asks for its wallet to become a signer; proof = personal_sign of BuyerOnboardingService.ProofMessage.
-app.MapPost("/api/buyers/requests", (BuyerRequestBody body, BuyerOnboardingService svc) =>
+app.MapPost("/api/buyers/requests", async (BuyerRequestBody body, BuyerOnboardingService svc, CancellationToken ct) =>
 {
     try
     {
-        var r = svc.Submit(body.TaxCode, body.CompanyName, body.Wallet, body.Signature);
+        var r = await svc.SubmitAsync(body.TaxCode, body.CompanyName, body.Wallet, body.Signature, ct);
         return Results.Accepted(value: new { requestId = r.Id, status = "pending" });
     }
     catch (BuyerOnboardingException ex)
@@ -97,14 +112,14 @@ app.MapPost("/api/buyers/requests", (BuyerRequestBody body, BuyerOnboardingServi
 });
 
 // Operator review list. Disabled unless ADMIN_TOKEN is set; buyerId is only revealed here.
-app.MapGet("/api/buyers/requests", (HttpRequest http, IBuyerRequestStore store) =>
+app.MapGet("/api/buyers/requests", async (HttpRequest http, IBuyerRequestStore store, CancellationToken ct) =>
 {
     var token = cfg["ADMIN_TOKEN"];
     if (string.IsNullOrEmpty(token)) return Results.NotFound();
     var given = http.Headers["X-Admin-Token"].ToString();
     if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(given), Encoding.UTF8.GetBytes(token)))
         return Results.Unauthorized();
-    return Results.Ok(store.List().Select(r => new
+    return Results.Ok((await store.ListAsync(ct)).Select(r => new
     {
         r.Id, r.TaxCode, r.CompanyName, r.Wallet, buyerId = "0x" + Convert.ToHexString(r.BuyerId).ToLowerInvariant(), r.CreatedAt,
     }));
