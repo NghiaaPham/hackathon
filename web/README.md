@@ -7,6 +7,8 @@ Ba màn hình theo vai trò, đọc trạng thái trực tiếp từ chain:
 | `/seller` | Nhà cung cấp | Tải XML hóa đơn đã ký → backend kiểm chữ ký → `register` + `markVerified` |
 | `/buyer` | Bên mua | Ký EIP-712 `Confirmation` (khoản nợ + điều khoản) → `confirm`; đến hạn thì `approve` + `pay` |
 | `/funder` | Bên tài trợ | Ký permit tVND → `fundWithPermit` (tiền ứng tới nhà cung cấp trong cùng giao dịch); `withdraw` khi tất toán |
+| `/buyer/register` | Bên mua | Nhập MST, ký personal_sign chứng minh sở hữu ví → gửi yêu cầu (backend không tự cấp quyền) |
+| `/admin` | Vận hành (REGISTRAR) | Xem yêu cầu bằng `ADMIN_TOKEN`, duyệt bằng `BuyerRegistry.addSigner` từ ví registrar |
 | `/r/[id]` | Ai cũng xem | Trạng thái + dòng thời gian từ event on-chain, không cần backend |
 
 Chế độ demo: nút **Nhận tVND** gọi `MockTVND.faucet()`; trang chủ có link faucet AVAX test của Builder Hub.
